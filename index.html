@@ -106,6 +106,22 @@ main{padding:16px 18px 100px}.hero{padding:25px 4px 20px}.eyebrow{font-size:12px
 
 .camera .capture{z-index:9999!important}.camera #shutter{z-index:10000!important;-webkit-appearance:none!important;appearance:none!important}
 .camera #shutter:active{transform:scale(.9)!important}
+</style>
+<style id="camera-final-fix">
+/* Single authoritative camera overlay rules */
+.camera .stage{isolation:isolate!important}
+.camera .stage>video{z-index:1!important}
+.camera .stage>#placeholder{z-index:2}
+.camera .stage>.alignGuide{display:block!important;position:absolute!important;inset:18% 14%!important;z-index:60!important;pointer-events:none!important;transform:none!important;width:auto!important;height:auto!important;left:14%!important;top:18%!important}
+.camera .alignGuide .frame{display:block!important;position:absolute!important;inset:0!important;border:3px solid #ef4444!important;border-radius:26px!important}
+.camera .alignGuide .v{display:block!important;position:absolute!important;left:50%!important;top:7%!important;bottom:7%!important;width:1px!important;background:#ffffff88!important}
+.camera .alignGuide .h{display:block!important;position:absolute!important;top:50%!important;left:7%!important;right:7%!important;height:1px!important;background:#ffffff88!important}
+.camera .alignGuide .target{display:block!important;position:absolute!important;left:50%!important;top:50%!important;width:28px!important;height:28px!important;transform:translate(-50%,-50%)!important;border:3px solid #ef4444!important;border-radius:50%!important}
+.camera .alignGuide .label{display:block!important;position:absolute!important;left:50%!important;top:-38px!important;transform:translateX(-50%)!important;background:#000c!important;color:#fff!important;border-radius:99px!important;padding:7px 12px!important;font-size:12px!important;font-weight:800!important;white-space:nowrap!important}
+.camera .alignGuide.warn .frame,.camera .alignGuide.warn .target{border-color:#fbbf24!important}
+.camera .alignGuide.ready .frame,.camera .alignGuide.ready .target{border-color:#22c55e!important}
+.camera .alignGuide.ready .frame{box-shadow:0 0 22px #22c55e77!important}
+.camera .capture{z-index:100!important}.camera #shutter{z-index:101!important}
 </style></head>
 <body><div class="app">
 <header><div class="logo">AutoFoto <span>AI</span></div><div class="pill">DEMO • LOCAL</div></header>
