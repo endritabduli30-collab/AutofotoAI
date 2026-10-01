@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1020"><title>AutoFoto AI</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto;background:#070a13;color:#f8fafc}
+button,input{font:inherit}.app{max-width:520px;margin:auto;min-height:100vh;background:linear-gradient(160deg,#0b1020,#090b14 58%,#150b22)}
+header{padding:26px 20px 8px;display:flex;justify-content:space-between;align-items:center}.logo{font-size:25px;font-weight:900}.logo span{background:linear-gradient(90deg,#a855f7,#3b82f6);color:transparent;background-clip:text}.pill{padding:8px 12px;border:1px solid #29314a;border-radius:99px;color:#aab3c8;font-size:12px}
+main{padding:16px 18px 100px}.hero{padding:25px 4px 20px}.eyebrow{font-size:12px;font-weight:800;letter-spacing:.12em;color:#9ca3af}.hero h1{font-size:42px;line-height:.98;margin:12px 0 14px;letter-spacing:-.045em}.hero p{color:#aab3c8;line-height:1.5;margin:0}
+.actions{display:grid;gap:12px}.card{border:1px solid #232b42;background:linear-gradient(145deg,rgba(24,31,52,.96),rgba(12,16,29,.96));border-radius:24px;padding:18px;box-shadow:0 15px 40px #0005}
+.primary{background:linear-gradient(110deg,#7c3aed,#2563eb);border:0}.action{display:flex;align-items:center;gap:15px;cursor:pointer}.ico{width:48px;height:48px;display:grid;place-items:center;border-radius:16px;background:#ffffff13;font-size:24px}.action b{display:block;font-size:17px}.action small{display:block;color:#b9c0d0;margin-top:3px}.primary small{color:#e8eaff}
+.section{margin-top:28px}.section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.section-title h2{margin:0;font-size:20px}.badge{color:#aab3c8;font-size:13px}
+.empty{text-align:center;padding:35px 18px;color:#8f98ac}.empty .big{font-size:42px}.vehicle{margin-bottom:12px}.vehicle h3{margin:0 0 5px}.vehicle p{margin:0;color:#9aa3b8;font-size:13px}
+.btn{border:0;border-radius:16px;padding:14px 16px;font-weight:800;color:white;background:#222a40;cursor:pointer}.btn.main{background:linear-gradient(90deg,#7c3aed,#2563eb);width:100%}.form{display:none}.form.show{display:block}.form h2{margin-top:0}.field{margin:12px 0}.field label{font-size:12px;color:#9ba5ba;font-weight:700}.field input{width:100%;margin-top:7px;border:1px solid #303950;background:#0c1120;color:#fff;border-radius:15px;padding:14px;outline:none}.field input:focus{border-color:#7c3aed}
+.camera{display:none}.camera.show{display:block}.camtop{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.progress{height:7px;background:#242b3c;border-radius:9px;overflow:hidden}.progress i{display:block;height:100%;background:linear-gradient(90deg,#8b5cf6,#3b82f6);width:8.3%}
+.stage{margin-top:12px;aspect-ratio:3/4;border-radius:24px;overflow:hidden;background:#111827;position:relative;display:grid;place-items:center;border:1px solid #29314a}.stage img{width:100%;height:100%;object-fit:cover}.guide{position:absolute;inset:18%;border:3px solid #ffffffd9;border-radius:46% 46% 24% 24%;box-shadow:0 0 20px #0008}.hint{position:absolute;top:18px;left:18px;right:18px;text-align:center;background:#0009;padding:9px;border-radius:13px;font-weight:700}
+.capture{display:flex;justify-content:center;padding:18px}.capture label{width:76px;height:76px;border-radius:50%;border:6px solid #8b5cf6;background:#fff;box-shadow:0 0 0 5px #ffffff20;cursor:pointer}.capture input{display:none}
+.bottom{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(520px,100%);height:76px;background:#0a0e19ee;backdrop-filter:blur(18px);border-top:1px solid #242b3d;display:flex;justify-content:space-around;align-items:center;z-index:9}.nav{background:none;border:0;color:#7f899e;font-size:12px}.nav strong{display:block;font-size:21px;margin-bottom:3px}.nav.active{color:#9b6cff}
+.toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:#fff;color:#111827;padding:11px 16px;border-radius:99px;font-weight:700;display:none;z-index:20;white-space:nowrap}
+@media(min-width:700px){body{padding:20px}.app{border-radius:32px;overflow:hidden;box-shadow:0 30px 90px #0009;min-height:850px}.bottom{bottom:20px;border-radius:0 0 32px 32px}}
+</style></head>
+<body><div class="app">
+<header><div class="logo">AutoFoto <span>AI</span></div><div class="pill">DEMO • LOCAL</div></header>
+<main id="home">
+<section class="hero"><div class="eyebrow">DEIN MOBILES FOTO-STUDIO</div><h1>Autos fotografieren.<br>Einfach besser.</h1><p>Geführte Fahrzeugaufnahmen für einheitliche, verkaufsfertige Bilder.</p></section>
+<div class="actions">
+<div class="card primary action" onclick="showForm()"><div class="ico">📷</div><div><b>Neues Fahrzeug</b><small>In wenigen Klicks fotografieren</small></div></div>
+<div class="card action" onclick="scrollVehicles()"><div class="ico">🚘</div><div><b>Meine Fahrzeuge</b><small>Aufnahmen & Galerie verwalten</small></div></div>
+<div class="card action" onclick="toast('KI-Studio kommt im nächsten Testschritt')"><div class="ico">✨</div><div><b>KI-Studio</b><small>Hintergrund & Bildoptimierung</small></div></div>
+</div>
+<section class="section" id="vehicles"><div class="section-title"><h2>Meine Fahrzeuge</h2><span class="badge" id="count">0 Fahrzeuge</span></div><div id="list"></div></section>
+</main>
+
+<main class="form" id="form"><button class="btn" onclick="goHome()">← Zurück</button><section class="hero"><div class="eyebrow">NEUES FAHRZEUG</div><h1 style="font-size:34px">Bereit fürs Shooting.</h1></section>
+<div class="card"><div class="field"><label>MARKE & MODELL</label><input id="model" placeholder="z. B. BMW X5"></div><div class="field"><label>BAUJAHR</label><input id="year" inputmode="numeric" placeholder="2024"></div><div class="field"><label>KENNZEICHEN</label><input id="plate" placeholder="SG 12345"></div><div class="field"><label>VIN • OPTIONAL</label><input id="vin" placeholder="WBA..."></div><button class="btn main" onclick="createVehicle()">Fahrzeug erstellen →</button></div></main>
+
+<main class="camera" id="camera"><div class="camtop"><button class="btn" onclick="goHome()">×</button><b id="angle">Vorne links</b><span id="step">1 / 12</span></div><div class="progress"><i id="bar"></i></div>
+<div class="stage" id="stage"><div style="text-align:center;color:#64748b">📷<br><b>Kamera bereit</b></div><div class="guide"></div><div class="hint" id="hint">Fahrzeug in der Kontur ausrichten</div></div>
+<div class="capture"><label><input id="photo" type="file" accept="image/*" capture="environment" onchange="takePhoto(event)"></label></div><div style="text-align:center;color:#8e98ad;font-size:13px">Tippe auf den Auslöser • Kamera öffnet sich auf dem Handy</div></main>
+</main>
+<nav class="bottom"><button class="nav active" onclick="goHome()"><strong>⌂</strong>Home</button><button class="nav" onclick="scrollVehicles()"><strong>🚘</strong>Fahrzeuge</button><button class="nav" onclick="toast('KI-Studio kommt im nächsten Testschritt')"><strong>✦</strong>KI-Studio</button></nav>
+<div class="toast" id="toast"></div></div>
+<script>
+const angles=["Vorne links","Vorne","Vorne rechts","Seite rechts","Hinten rechts","Hinten","Hinten links","Seite links","Innenraum","Cockpit","Rücksitze","Kofferraum"];
+let cars=JSON.parse(localStorage.getItem("af_cars")||"[]"), current=null, step=0;
+function save(){localStorage.setItem("af_cars",JSON.stringify(cars));render()}
+function view(id){["home","form","camera"].forEach(x=>document.getElementById(x).classList.remove("show"));document.getElementById(id).classList.add("show");document.getElementById(id).style.display="block";["home","form","camera"].filter(x=>x!==id).forEach(x=>document.getElementById(x).style.display="none")}
+function goHome(){view("home");render()} function showForm(){view("form")}
+function scrollVehicles(){goHome();setTimeout(()=>document.getElementById("vehicles").scrollIntoView({behavior:"smooth"}),50)}
+function createVehicle(){let m=model.value.trim();if(!m){toast("Bitte Marke & Modell eingeben");return}let c={id:Date.now(),model:m,year:year.value,plate:plate.value,vin:vin.value,photos:[]};cars.unshift(c);save();start(c.id)}
+function start(id){current=cars.find(c=>c.id===id);step=Math.min(current.photos.length,11);view("camera");updateCam()}
+function updateCam(){angle.textContent=angles[step];document.getElementById("step").textContent=(step+1)+" / 12";bar.style.width=((step+1)/12*100)+"%";let p=current.photos[step];stage.innerHTML=p?`<img src="${p}"><div class="guide"></div><div class="hint">${angles[step]} ✓</div>`:`<div style="text-align:center;color:#64748b">📷<br><b>${angles[step]}</b></div><div class="guide"></div><div class="hint">Fahrzeug in der Kontur ausrichten</div>`}
+function takePhoto(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{current.photos[step]=r.result;save();if(step<11){step++;updateCam()}else{toast("12 Aufnahmen komplett ✓");goHome()}};r.readAsDataURL(f);e.target.value=""}
+function render(){count.textContent=cars.length+" "+(cars.length===1?"Fahrzeug":"Fahrzeuge");list.innerHTML=cars.length?cars.map(c=>`<div class="card vehicle action" onclick="start(${c.id})"><div class="ico">${c.photos[0]?`<img src="${c.photos[0]}" style="width:100%;height:100%;object-fit:cover;border-radius:14px">`:"🚗"}</div><div style="flex:1"><h3>${esc(c.model)}</h3><p>${esc(c.year||"")}${c.plate?" • "+esc(c.plate):""} • ${c.photos.length}/12 Fotos</p></div><b>›</b></div>`).join(""):`<div class="card empty"><div class="big">🚘</div><b>Noch kein Fahrzeug</b><p>Lege dein erstes Fahrzeug an und starte das Shooting.</p></div>`}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+function toast(t){let x=document.getElementById("toast");x.textContent=t;x.style.display="block";setTimeout(()=>x.style.display="none",2300)}
+render();
+</script></body></html>
