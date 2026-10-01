@@ -162,6 +162,15 @@ html,body,.app{width:100%!important;height:100%!important;min-height:100%!import
 #camera.camera.show .hint{display:block!important;visibility:visible!important;z-index:85!important}
 #camera.camera.show .rotateNotice{display:none!important}
 }
+</style>
+<style id="video-rotation-fix">
+#camera .stage{background:#111!important}
+#camera #live{display:block!important;visibility:visible!important;opacity:1!important;z-index:1!important;background:#111!important}
+#camera .vehicleTemplate{z-index:20!important}
+#camera .aimOverlay{display:none!important}
+@media screen and (orientation:landscape){
+#camera.camera.show #live{display:block!important;visibility:visible!important;opacity:1!important;transform:translateZ(0)!important;-webkit-transform:translateZ(0)!important}
+}
 </style></head>
 <body><div class="app">
 <header><div class="logo">AutoFoto <span>AI</span></div><div class="pill">DEMO • LOCAL</div></header>
@@ -219,5 +228,9 @@ function takePhoto(e){let f=e.target.files[0];if(!f)return;let r=new FileReader(
 function render(){count.textContent=cars.length+" "+(cars.length===1?"Fahrzeug":"Fahrzeuge");list.innerHTML=cars.length?cars.map(c=>`<div class="card vehicle action" onclick="start(${c.id})"><div class="ico">${c.photos[0]?`<img src="${c.photos[0]}" style="width:100%;height:100%;object-fit:cover;border-radius:14px">`:"🚗"}</div><div style="flex:1"><h3>${esc(c.model)}</h3><p>${c.vin?esc(c.vin)+" • ":""}${c.photos.filter(Boolean).length}/12 Fotos</p></div><b>›</b></div>`).join(""):`<div class="card empty"><div class="big">🚘</div><b>Noch kein Fahrzeug</b><p>Lege dein erstes Fahrzeug an und starte das Shooting.</p></div>`}
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
 function toast(t){let x=document.getElementById("toast");x.textContent=t;x.style.display="block";setTimeout(()=>x.style.display="none",2300)}
+
+let rotateTimer;
+window.addEventListener("orientationchange",()=>{clearTimeout(rotateTimer);rotateTimer=setTimeout(async()=>{if(document.getElementById("camera").classList.contains("show")){live.style.display="block";live.style.visibility="visible";if(!live.srcObject||!live.videoWidth){await startLiveCamera()}else{try{await live.play()}catch(e){}}}},500)});
+window.addEventListener("resize",()=>{if(document.getElementById("camera").classList.contains("show")){live.style.display="block";live.style.visibility="visible"}});
 render();
 </script></body></html>
