@@ -146,6 +146,22 @@ main{padding:16px 18px 100px}.hero{padding:25px 4px 20px}.eyebrow{font-size:12px
 .camera .vehicleTemplate.ready path,.camera .vehicleTemplate.ready line,.camera .vehicleTemplate.ready ellipse{stroke:#22c55e!important}
 .camera .aimOverlay{display:none!important}
 </style>
+</style>
+<style id="landscape-hard-fix">
+/* Landscape: keep the complete shooting cockpit visible */
+@media screen and (orientation:landscape){
+html,body,.app{width:100%!important;height:100%!important;min-height:100%!important;overflow:hidden!important}
+#camera.camera.show{display:block!important;visibility:visible!important;opacity:1!important;position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;height:100dvh!important;z-index:999!important;background:#000!important}
+#camera.camera.show .shootlayout{display:block!important;visibility:visible!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important}
+#camera.camera.show .stage{display:block!important;visibility:visible!important;position:absolute!important;left:150px!important;right:150px!important;top:0!important;bottom:0!important;width:auto!important;height:auto!important}
+#camera.camera.show #live{display:block!important;visibility:visible!important;opacity:1!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important}
+#camera.camera.show .anglestrip{display:flex!important;visibility:visible!important;position:absolute!important;left:0!important;top:0!important;bottom:0!important;width:150px!important;z-index:90!important}
+#camera.camera.show .capture{display:flex!important;visibility:visible!important;position:absolute!important;right:0!important;top:0!important;bottom:0!important;width:150px!important;z-index:100!important}
+#camera.camera.show .camtop{display:flex!important;visibility:visible!important;z-index:110!important}
+#camera.camera.show .vehicleTemplate{display:block!important;visibility:visible!important;opacity:1!important;z-index:80!important}
+#camera.camera.show .hint{display:block!important;visibility:visible!important;z-index:85!important}
+#camera.camera.show .rotateNotice{display:none!important}
+}
 </style></head>
 <body><div class="app">
 <header><div class="logo">AutoFoto <span>AI</span></div><div class="pill">DEMO • LOCAL</div></header>
