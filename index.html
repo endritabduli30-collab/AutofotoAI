@@ -202,9 +202,11 @@ html,body,.app{width:100%!important;height:100%!important;min-height:100%!import
 #camera #shutter{z-index:2147483647!important;pointer-events:auto!important;touch-action:manipulation!important;-webkit-user-select:none!important;user-select:none!important}
 #camera:after{pointer-events:none!important}
 #camera .zoomRail,#camera .levelTarget{pointer-events:none!important}
-</style><style id="final-shot-20-v2">#finalShutter{display:none;position:absolute!important;right:14px!important;bottom:22px!important;width:76px!important;height:38px!important;border:2px solid #fff!important;border-radius:20px!important;background:#62cbbb!important;color:#111!important;font-size:12px!important;font-weight:900!important;z-index:2147483647!important;pointer-events:auto!important;touch-action:manipulation!important}@media(orientation:landscape){#camera .capture:has(#finalShutter[style*="block"]) #shutter{display:block!important}}</style></head>
-<body><div class="app">
-<header><div class="logo">AutoFoto <span>AI</span></div><div class="pill">DEMO • LOCAL</div></header>
+</style><style id="final-shot-20-v2">#finalShutter{display:none;position:absolute!important;right:14px!important;bottom:22px!important;width:76px!important;height:38px!important;border:2px solid #fff!important;border-radius:20px!important;background:#62cbbb!important;color:#111!important;font-size:12px!important;font-weight:900!important;z-index:2147483647!important;pointer-events:auto!important;touch-action:manipulation!important}@media(orientation:landscape){#camera .capture:has(#finalShutter[style*="block"]) #shutter{display:block!important}}</style><style id="customer-ready-v1">
+.authGate{position:fixed;inset:0;z-index:999999999;background:linear-gradient(160deg,#070a13,#151026);display:none;place-items:center;padding:20px}.authCard{width:min(420px,100%);background:#101522;border:1px solid #2b344b;border-radius:28px;padding:28px;box-shadow:0 30px 90px #0009}.authCard h1{margin:26px 0 6px}.authCard p{color:#9ca6bb;margin:0 0 22px}.authCard input{display:block;width:100%;padding:14px;margin:10px 0;border-radius:14px;border:1px solid #303950;background:#090d18;color:#fff}.authSecondary{width:100%;margin-top:10px;padding:12px;border:0;background:transparent;color:#aeb8ce;font-weight:800}.authCard small{display:block;margin-top:18px;color:#737f98;line-height:1.4}.accountPill{background:#121827;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.studioVehicleGallery{display:grid;grid-template-columns:1fr auto}.studioPhotoGrid{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:8px}.studioShot{position:relative;aspect-ratio:4/3;border-radius:12px;overflow:hidden;background:#05070b}.studioShot img{width:100%;height:100%;object-fit:cover}.studioShot span{position:absolute;left:5px;right:5px;bottom:5px;background:#000b;padding:5px;border-radius:7px;font-size:9px;text-align:center}
+</style></head>
+<body><div id="authGate" class="authGate"><div class="authCard"><div class="logo">AutoFoto <span>AI</span></div><h1>Willkommen</h1><p>Jeder Betrieb sieht nur seine eigenen Fahrzeuge.</p><input id="loginEmail" type="email" autocomplete="email" placeholder="E-Mail"><input id="loginPass" type="password" autocomplete="current-password" placeholder="Passwort"><button class="btn main" onclick="loginAccount()">Anmelden</button><button class="authSecondary" onclick="createAccount()">Neues Konto erstellen</button><small id="authMsg">Testversion: Konto wird auf diesem Gerät gespeichert.</small></div></div><div class="app">
+<header><div class="logo">AutoFoto <span>AI</span></div><button class="pill accountPill" id="accountPill" onclick="logoutAccount()">Konto</button></header>
 <main id="home">
 <section class="hero"><div class="eyebrow">DEIN MOBILES FOTO-STUDIO</div><h1>Autos fotografieren.<br>Einfach besser.</h1><p>Geführte Fahrzeugaufnahmen für einheitliche, verkaufsfertige Bilder.</p></section>
 <div class="actions">
@@ -231,8 +233,14 @@ html,body,.app{width:100%!important;height:100%!important;min-height:100%!import
 const angles=["Vorne links","Vorne","Vorne rechts","Seite rechts","Hinten rechts","Hinten","Hinten links","Seite links","Innenraum vorne","Cockpit","Mittelkonsole","Fahrertür","Innenraum hinten","Rücksitze","Kofferraum","Motorraum","Rad vorne links","Rad vorne rechts","Rad hinten links","Rad hinten rechts"];
 const shotHints=["70–90 cm Höhe • 45° vorne links","70–90 cm Höhe • gerade vorne","70–90 cm Höhe • 45° vorne rechts","Fahrzeugseite vollständig ausfüllen","70–90 cm Höhe • 45° hinten rechts","70–90 cm Höhe • gerade hinten","70–90 cm Höhe • 45° hinten links","Fahrzeugseite vollständig ausfüllen","Fahrertür öffnen • ganzen vorderen Innenraum ausrichten","Lenkrad und Instrumente mittig","Mittelkonsole von oben ausrichten","Türverkleidung vollständig in die Kontur","Hintere Tür öffnen • Innenraum diagonal","Rücksitzbank vollständig ausrichten","Kofferraum geöffnet • mittig ausrichten","Motorhaube geöffnet • Motorraum mittig","Rad vollständig in den Kreis","Rad vollständig in den Kreis","Rad vollständig in den Kreis","Rad vollständig in den Kreis"];
 let autoReadySince=0,autoShotLock=false;
-let cars=JSON.parse(localStorage.getItem("af_cars")||"[]"), current=null, step=0;
-function save(){localStorage.setItem("af_cars",JSON.stringify(cars));render()}
+let account=JSON.parse(localStorage.getItem("af_session")||"null"),cars=[],current=null,step=0;
+function accountKey(){return "af_cars_"+(account?.email||"guest").toLowerCase()}
+function loadCars(){cars=JSON.parse(localStorage.getItem(accountKey())||"[]")}
+function loginAccount(){let email=loginEmail.value.trim().toLowerCase(),pass=loginPass.value;if(!email||!pass){authMsg.textContent="E-Mail und Passwort eingeben.";return}let users=JSON.parse(localStorage.getItem("af_users")||"{}");if(!users[email]||users[email]!==pass){authMsg.textContent="Konto nicht gefunden oder Passwort falsch.";return}account={email};localStorage.setItem("af_session",JSON.stringify(account));loadCars();authGate.style.display="none";accountPill.textContent=email;render()}
+function createAccount(){let email=loginEmail.value.trim().toLowerCase(),pass=loginPass.value;if(!email||pass.length<4){authMsg.textContent="E-Mail und Passwort mit mindestens 4 Zeichen eingeben.";return}let users=JSON.parse(localStorage.getItem("af_users")||"{}");users[email]=pass;localStorage.setItem("af_users",JSON.stringify(users));account={email};localStorage.setItem("af_session",JSON.stringify(account));loadCars();authGate.style.display="none";accountPill.textContent=email;render()}
+function logoutAccount(){if(window.afStream){window.afStream.getTracks().forEach(t=>t.stop());window.afStream=null}localStorage.removeItem("af_session");account=null;cars=[];authGate.style.display="grid"}
+function initAccount(){if(account){loadCars();authGate.style.display="none";setTimeout(()=>accountPill.textContent=account.email,0)}else authGate.style.display="grid"}
+function save(){localStorage.setItem(accountKey(),JSON.stringify(cars));render()}
 function view(id){["home","form","camera","review","processing","finished","studio"].forEach(x=>{const el=document.getElementById(x);el.classList.toggle("show",x===id);el.style.display=x===id?"block":"none"});document.querySelector("header").style.display=id==="camera"?"none":"flex";document.querySelector(".bottom").style.display=id==="camera"?"none":"flex"}
 function goHome(){if(window.afStream){window.afStream.getTracks().forEach(t=>t.stop());window.afStream=null}view("home");render()} function showForm(){view("form")}
 function openStudio(){view("studio");renderStudio()} function scrollVehicles(){goHome();setTimeout(()=>document.getElementById("vehicles").scrollIntoView({behavior:"smooth"}),50)}
@@ -255,10 +263,10 @@ function captureLive(){
    autoShotLock=true;autoReadySince=0;
    if(window.afStream){window.afStream.getTracks().forEach(t=>t.stop());window.afStream=null}
    showReview();
-   setTimeout(()=>{try{localStorage.setItem("af_cars",JSON.stringify(cars))}catch(e){toast("Shooting komplett ✓")}},50);
+   setTimeout(()=>{try{localStorage.setItem(accountKey(),JSON.stringify(cars))}catch(e){toast("Shooting komplett ✓")}},50);
    return;
  }
- try{localStorage.setItem("af_cars",JSON.stringify(cars))}catch(e){}
+ try{localStorage.setItem(accountKey(),JSON.stringify(cars))}catch(e){}
  render();step++;updateCam();toast("Foto gespeichert ✓")
 }
 let shutterBusy=false;
@@ -268,7 +276,8 @@ shutter.onclick=shutterTap;
 const capturePanel=document.getElementById("capturePanel");capturePanel.onclick=function(e){if(e.target!==shutter)shutterTap(e)};
 function showReview(){view("review");reviewgrid.innerHTML=angles.map((a,i)=>'<div class="reviewshot" onclick="retake('+i+')">'+(current.photos[i]?'<img src="'+current.photos[i]+'">':'')+'<span>'+a+(current.photos[i]?' ✓':' – fehlt')+'</span></div>').join("")}
 function retake(i){autoShotLock=false;shutterBusy=false;step=i;view("camera");updateCam();showCameraStart()}
-function renderStudio(){let x=document.getElementById("studioList");if(!x)return;x.innerHTML=cars.length?cars.map(v=>'<div class="studioVehicle"><div class="studioThumb">'+(v.photos[0]?'<img src="'+v.photos[0]+'">':'🚗')+'</div><div class="studioMeta"><b>'+esc(v.model)+'</b><small>'+v.photos.filter(Boolean).length+' / '+angles.length+' Fotos</small></div><button class="btn" onclick="current=cars.find(c=>c.id=='+v.id+');showReview()">Öffnen</button></div>').join(""):'<div class="card empty">Noch keine Fahrzeuge für das KI-Studio.</div>'}
+function renderStudio(){let x=document.getElementById("studioList");if(!x)return;x.innerHTML=cars.length?cars.map(v=>'<div class="studioVehicle studioVehicleGallery"><div class="studioMeta"><b>'+esc(v.model)+'</b><small>'+v.photos.filter(Boolean).length+' / '+angles.length+' Aufnahmen</small></div><button class="btn" onclick="toggleStudioGallery('+v.id+')">Bilder ansehen</button><div class="studioPhotoGrid" id="sg_'+v.id+'"></div></div>').join(""):'<div class="card empty">Noch keine Fahrzeuge für das KI-Studio.</div>'}
+function toggleStudioGallery(id){let v=cars.find(c=>c.id===id),g=document.getElementById("sg_"+id);if(!v||!g)return;if(g.innerHTML){g.innerHTML="";return}g.innerHTML=v.photos.map((p,i)=>p?'<div class="studioShot"><img src="'+p+'"><span>'+esc(angles[i]||("Foto "+(i+1)))+'</span></div>':'').join("")}
 function confirmShooting(){if(current.photos.filter(Boolean).length<angles.length){toast("Bitte zuerst alle Fotos aufnehmen");return}view("processing");let n=0;processcount.textContent="0 / "+angles.length;let timer=setInterval(()=>{n++;processcount.textContent=n+" / "+angles.length;processtxt.textContent=n<5?"Fotos werden geprüft …":n<10?"Studio-Verarbeitung wird vorbereitet …":"Galerie wird fertiggestellt …";if(n>=angles.length){clearInterval(timer);setTimeout(()=>view("finished"),500)}},180)}
 
 async function enableGuidance(){try{if(typeof DeviceOrientationEvent!=="undefined"&&typeof DeviceOrientationEvent.requestPermission==="function"){sensorbtn.style.display="block";guideStatus.textContent="◎ Ausrichtung antippen";return}window.addEventListener("deviceorientation",onOrientation,true);sensorbtn.style.display="none";guideStatus.textContent="Handy ausrichten"}catch(e){}}
@@ -286,5 +295,5 @@ function toast(t){let x=document.getElementById("toast");x.textContent=t;x.style
 let rotateTimer;
 window.addEventListener("orientationchange",()=>{clearTimeout(rotateTimer);rotateTimer=setTimeout(async()=>{if(document.getElementById("camera").classList.contains("show")){live.style.display="block";live.style.visibility="visible";if(!live.srcObject||!live.videoWidth){await startLiveCamera()}else{try{await live.play()}catch(e){}}}},500)});
 window.addEventListener("resize",()=>{if(document.getElementById("camera").classList.contains("show")){live.style.display="block";live.style.visibility="visible"}});
-render();
+initAccount();render();
 </script></body></html>
