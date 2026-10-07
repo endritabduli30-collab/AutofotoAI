@@ -213,6 +213,9 @@ html,body,.app{width:100%!important;height:100%!important;min-height:100%!import
 .studioBrand{position:absolute;z-index:3;top:10px;left:10px;color:#111;font-size:8px;line-height:.9;letter-spacing:.08em;background:#ffffffd9;padding:6px;border-radius:5px}
 .studioProcessed span{z-index:4!important}.studioProcessed i{position:absolute;z-index:4;right:6px;top:6px;background:#111c;color:#fff;font-size:8px;font-style:normal;padding:4px 6px;border-radius:6px}
 @media(min-width:700px){#studioList .studioPhotoGrid{grid-template-columns:repeat(4,minmax(0,1fr))!important}}
+</style><style id="photo-quality-v3">
+.studioProcessed img,.reviewGrid img,.photo img{image-rendering:auto!important;object-fit:contain!important}
+#live{image-rendering:auto!important}
 </style></head>
 <body><div id="authGate" class="authGate"><div class="authCard"><div class="logo">AutoFoto <span>AI</span></div><h1>Willkommen</h1><p>Jeder Betrieb sieht nur seine eigenen Fahrzeuge.</p><input id="loginEmail" type="email" autocomplete="email" placeholder="E-Mail"><input id="loginPass" type="password" autocomplete="current-password" placeholder="Passwort"><button class="btn main" onclick="loginAccount()">Anmelden</button><button class="authSecondary" onclick="createAccount()">Neues Konto erstellen</button><small id="authMsg">Testversion: Konto wird auf diesem Gerät gespeichert.</small></div></div><div class="app">
 <header><div class="logo">AutoFoto <span>AI</span></div><button class="pill accountPill" id="accountPill" onclick="logoutAccount()">Konto</button></header>
@@ -264,10 +267,10 @@ function captureLive(){
  if(!live.videoWidth){toast("Kamera noch nicht bereit");return}
  const isLast=step===angles.length-1;
  let cv=document.createElement("canvas"),ctx=cv.getContext("2d");
- let maxW=isLast?960:1280,scale=Math.min(1,maxW/live.videoWidth);
+ let maxW=1920,scale=Math.min(1,maxW/live.videoWidth);
  cv.width=Math.round(live.videoWidth*scale);cv.height=Math.round(live.videoHeight*scale);
  ctx.drawImage(live,0,0,cv.width,cv.height);
- current.photos[step]=cv.toDataURL("image/jpeg",isLast?.55:.68);
+ current.photos[step]=cv.toDataURL("image/jpeg",.88);
  if(isLast){
    autoShotLock=true;autoReadySince=0;
    if(window.afStream){window.afStream.getTracks().forEach(t=>t.stop());window.afStream=null}
