@@ -261,8 +261,14 @@ function accountKey(){return "af_cars_"+(account?.email||"guest").toLowerCase()}
 function loadCars(){
  let own=JSON.parse(localStorage.getItem(accountKey())||"[]");
  let legacy=JSON.parse(localStorage.getItem("af_cars")||"[]");
- if(!own.length&&legacy.length){
-   own=legacy;
+ if(legacy.length){
+   legacy.forEach(oldCar=>{
+     let match=own.find(v=>(v.vin&&oldCar.vin&&v.vin===oldCar.vin)||((v.model||"").trim().toLowerCase()===(oldCar.model||"").trim().toLowerCase()));
+     if(match){
+       let oldPhotos=(oldCar.photos||[]).filter(Boolean).length,newPhotos=(match.photos||[]).filter(Boolean).length;
+       if(oldPhotos>newPhotos)match.photos=oldCar.photos;
+     }else own.push(oldCar)
+   });
    try{localStorage.setItem(accountKey(),JSON.stringify(own))}catch(e){}
  }
  cars=own
