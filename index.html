@@ -269,8 +269,15 @@ function goHome(){if(window.afStream){window.afStream.getTracks().forEach(t=>t.s
 function openStudio(){view("studio");renderStudio()} function scrollVehicles(){goHome();setTimeout(()=>document.getElementById("vehicles").scrollIntoView({behavior:"smooth"}),50)}
 function createVehicle(){let m=model.value.trim();if(!m){toast("Bitte Marke & Modell eingeben");return}let c={id:Date.now(),model:m,vin:vin.value.trim(),photos:[]};cars.unshift(c);save();start(c.id)}
 async function prepareShooting(id){
- try{if(screen.orientation&&screen.orientation.lock)await screen.orientation.lock("landscape")}catch(e){}
- start(id)
+ try{
+   const root=document.documentElement;
+   if(root.requestFullscreen&&!document.fullscreenElement)await root.requestFullscreen();
+ }catch(e){}
+ try{
+   if(screen.orientation&&typeof screen.orientation.lock==="function")await screen.orientation.lock("landscape-primary");
+ }catch(e){}
+ start(id);
+ setTimeout(()=>{if(matchMedia("(orientation: landscape)").matches&&!window.afStream)openCamera()},120)
 }
 function start(id){autoShotLock=false;shutterBusy=false;current=cars.find(c=>c.id===id);step=Math.min(current.photos.length,angles.length-1);view("camera");updateCam();if(matchMedia("(orientation: landscape)").matches){openCamera()}else{showCameraStart()}}
 function prevAngle(){step=Math.max(0,step-1);updateCam()}
