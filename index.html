@@ -258,7 +258,15 @@ const shotHints=["70–90 cm Höhe • 45° vorne links","70–90 cm Höhe • g
 let autoReadySince=0,autoShotLock=false;
 let account=JSON.parse(localStorage.getItem("af_session")||"null"),cars=[],current=null,step=0;
 function accountKey(){return "af_cars_"+(account?.email||"guest").toLowerCase()}
-function loadCars(){cars=JSON.parse(localStorage.getItem(accountKey())||"[]")}
+function loadCars(){
+ let own=JSON.parse(localStorage.getItem(accountKey())||"[]");
+ let legacy=JSON.parse(localStorage.getItem("af_cars")||"[]");
+ if(!own.length&&legacy.length){
+   own=legacy;
+   try{localStorage.setItem(accountKey(),JSON.stringify(own))}catch(e){}
+ }
+ cars=own
+}
 function loginAccount(){let email=loginEmail.value.trim().toLowerCase(),pass=loginPass.value;if(!email||!pass){authMsg.textContent="E-Mail und Passwort eingeben.";return}let users=JSON.parse(localStorage.getItem("af_users")||"{}");if(!users[email]||users[email]!==pass){authMsg.textContent="Konto nicht gefunden oder Passwort falsch.";return}account={email};localStorage.setItem("af_session",JSON.stringify(account));loadCars();authGate.style.display="none";accountPill.textContent=email;render()}
 function createAccount(){let email=loginEmail.value.trim().toLowerCase(),pass=loginPass.value;if(!email||pass.length<4){authMsg.textContent="E-Mail und Passwort mit mindestens 4 Zeichen eingeben.";return}let users=JSON.parse(localStorage.getItem("af_users")||"{}");users[email]=pass;localStorage.setItem("af_users",JSON.stringify(users));account={email};localStorage.setItem("af_session",JSON.stringify(account));loadCars();authGate.style.display="none";accountPill.textContent=email;render()}
 function logoutAccount(){if(window.afStream){window.afStream.getTracks().forEach(t=>t.stop());window.afStream=null}localStorage.removeItem("af_session");account=null;cars=[];authGate.style.display="grid"}
