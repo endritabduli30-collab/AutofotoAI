@@ -337,7 +337,7 @@ function studioKey(v,i){return (account?.email||"guest")+":"+v.id+":"+i}
 function renderStudio(){
  const x=document.getElementById("studioList");if(!x)return;
  x.innerHTML=cars.length?cars.map(v=>{const shots=v.photos||[],count=shots.filter(Boolean).length;return '<section class="studioVehicle studioVehicleGallery"><div class="studioMeta"><b>'+esc(v.model||"Fahrzeug")+'</b><small>'+count+' / 20 Fotos · GARAGE VELZA</small></div><div class="studioBadge">STUDIO</div><div class="studioPhotoGrid">'+shots.map((p,i)=>p?'<figure class="studioShot"><img id="studioimg_'+v.id+'_'+i+'" loading="lazy" src="'+p+'" alt="Fahrzeugfoto"><figcaption>'+esc(angles[i]||("Foto "+(i+1)))+'</figcaption><button class="studioProcessBtn" onclick="processStudioPhoto('+v.id+','+i+',this)">KI bearbeiten</button><a id="studiodl_'+v.id+'_'+i+'" href="'+p+'" download="AutoFoto-'+(i+1)+'.jpg">Original speichern</a></figure>':'').join("")+'</div>'+(count===0?'<p class="studioEmpty">Keine Fotos gespeichert.</p>':'')+'</section>'}).join(""):'<div class="card">Noch keine Fahrzeuge in diesem Konto.</div>';
- cars.forEach(v=>(v.photos||[]).forEach(async(p,i)=>{if(!p)return;try{const blob=await studioLoad(studioKey(v,i));if(blob){const url=URL.createObjectURL(blob),img=document.getElementById('studioimg_'+v.id+'_'+i),dl=document.getElementById('studiodl_'+v.id+'_'+i);if(img&&dl){img.src=url;dl.href=url;dl.download='VELZA-Studio-'+(i+1)+'.png';dl.textContent='Studiofoto speichern'}}}catch(e){}}))
+ cars.forEach(v=>(v.photos||[]).forEach(async(p,i)=>{if(!p)return;try{const blob=await studioLoad(studioKey(v,i));if(blob){const url=URL.createObjectURL(blob),img=document.getElementById('studioimg_'+v.id+'_'+i),dl=document.getElementById('studiodl_'+v.id+'_'+i);if(img&&dl){img.src=url;dl.href=url;dl.download='VELZA-Showroom-'+(i+1)+'.png';dl.textContent='Studiofoto speichern'}}}catch(e){}}))
 }
 function toggleStudioGallery(id){renderStudio()}
 async function processStudioPhoto(id,i,btn){
@@ -349,25 +349,28 @@ async function processStudioPhoto(id,i,btn){
   btn.textContent="Studio wird erstellt …";
   const img=new Image();img.src=URL.createObjectURL(cutout);await img.decode();
   const cv=document.createElement("canvas");cv.width=1600;cv.height=1000;const g=cv.getContext("2d");
-  const wall=g.createLinearGradient(0,0,0,720);wall.addColorStop(0,"#08090c");wall.addColorStop(1,"#282b30");g.fillStyle=wall;g.fillRect(0,0,1600,720);
-  const floor=g.createLinearGradient(0,720,0,1000);floor.addColorStop(0,"#ffffff");floor.addColorStop(1,"#d9dadd");g.fillStyle=floor;g.fillRect(0,720,1600,280);
-  g.strokeStyle="#a5a7aa";g.lineWidth=2;g.beginPath();g.moveTo(0,720);g.lineTo(1600,720);g.stroke();
-  g.fillStyle="#e3e5e9";g.textAlign="center";g.font="300 35px Arial";g.fillText("G A R A G E",800,125);g.font="300 116px Arial";g.fillText("V E L Z A",800,255);g.fillRect(620,285,360,3);
-  // Trim transparent segmentation margins so the actual tires touch the floor.
+  // Reference studio: light side walls, deep charcoal central wall and polished dark floor.
+  g.fillStyle="#e5e5e5";g.fillRect(0,0,1600,1000);
+  const wall=g.createLinearGradient(300,0,1300,0);wall.addColorStop(0,"#17191b");wall.addColorStop(.45,"#323438");wall.addColorStop(1,"#17191b");
+  g.fillStyle=wall;g.fillRect(280,0,1040,665);
+  g.fillStyle="#d7d7d7";g.fillRect(0,0,280,665);g.fillRect(1320,0,280,665);
+  g.fillStyle="#55575a";g.fillRect(276,0,7,665);g.fillRect(1317,0,7,665);
+  const floor=g.createLinearGradient(0,665,0,1000);floor.addColorStop(0,"#25272a");floor.addColorStop(.5,"#161719");floor.addColorStop(1,"#303236");g.fillStyle=floor;g.fillRect(0,665,1600,335);
+  g.strokeStyle="#85868a";g.lineWidth=3;g.beginPath();g.moveTo(0,665);g.lineTo(1600,665);g.stroke();
+  // Preserve the real vehicle pixels; trim only transparent margins.
   const scan=document.createElement("canvas");scan.width=img.naturalWidth;scan.height=img.naturalHeight;
   const sc=scan.getContext("2d",{willReadFrequently:true});sc.drawImage(img,0,0);
   const pixels=sc.getImageData(0,0,scan.width,scan.height).data;
   let left=scan.width,top=scan.height,right=0,bottom=0;
-  for(let py=0;py<scan.height;py+=2)for(let px=0;px<scan.width;px+=2){
-    if(pixels[(py*scan.width+px)*4+3]>90){left=Math.min(left,px);right=Math.max(right,px);top=Math.min(top,py);bottom=Math.max(bottom,py)}
-  }
+  for(let py=0;py<scan.height;py+=2)for(let px=0;px<scan.width;px+=2)if(pixels[(py*scan.width+px)*4+3]>90){left=Math.min(left,px);right=Math.max(right,px);top=Math.min(top,py);bottom=Math.max(bottom,py)}
   if(right<=left||bottom<=top)throw Error("Fahrzeug konnte nicht erkannt werden");
   const sw=right-left+2,sh=bottom-top+2;
-  const ratio=Math.min(1380/sw,660/sh),w=sw*ratio,h=sh*ratio,x=(1600-w)/2;
-  const ground=797,y=ground-h;
-  // Contact shadow centered immediately below the wheels, not a detached oval.
-  g.save();g.filter="blur(13px)";g.fillStyle="rgba(0,0,0,.24)";
-  g.beginPath();g.ellipse(800,ground+3,Math.min(w*.43,570),Math.max(10,Math.min(23,h*.045)),0,0,Math.PI*2);g.fill();g.restore();
+  const ratio=Math.min(1370/sw,690/sh),w=sw*ratio,h=sh*ratio,x=(1600-w)/2;
+  const ground=785,y=ground-h;
+  // Grounded contact shadow.
+  g.save();g.filter="blur(19px)";g.fillStyle="rgba(0,0,0,.65)";g.beginPath();g.ellipse(800,ground+5,Math.min(w*.43,590),23,0,0,Math.PI*2);g.fill();g.restore();
+  // Subtle, softened reflection in polished flooring.
+  g.save();g.beginPath();g.rect(0,ground,1600,1000-ground);g.clip();g.translate(0,2*ground);g.scale(1,-1);g.globalAlpha=.16;g.filter="blur(5px)";g.drawImage(img,left,top,sw,sh,x,y,w,h);g.restore();
   g.drawImage(img,left,top,sw,sh,x,y,w,h);
   const result=await new Promise(resolve=>cv.toBlob(resolve,"image/png"));if(!result)throw Error("Bildexport fehlgeschlagen");
   await studioStore(studioKey(v,i),result);
