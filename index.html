@@ -269,7 +269,7 @@ header .logo{color:#17191d!important}
 #studioList .studioShot .vzPhoto>.vzLogo{position:absolute!important;display:inline-block!important;top:7px!important;left:0!important;width:auto!important;height:auto!important;z-index:2!important}
 #studioList .studioShot{display:block!important}#studioList .studioShot figcaption{display:block!important}
 #studioList .studioPhotosBtn{background:#202a3b!important;color:#fff!important;border-radius:9px!important;cursor:pointer!important;touch-action:manipulation!important}
-</style></head>
+</style><style id="processed-only-gallery">#studioList .vzPhoto{display:flex!important;align-items:center;justify-content:center;background:#f1f2f4!important}#studioList .vzPhoto:has(img[style*="display: none"]):after{content:"Studio wird erstellt";font-size:12px;color:#777}#studioList .studioPhotosBtn{background:#202a3b!important}</style></head>
 <body><div id="rotateGate"><div class="rotatePhone">↻</div><b>iPhone ins Querformat drehen</b><span>Die Aufnahme startet danach automatisch.</span></div><div id="authGate" class="authGate"><div class="authCard"><div class="logo">AutoFoto <span>AI</span></div><h1>Willkommen</h1><p>Jeder Betrieb sieht nur seine eigenen Fahrzeuge.</p><input id="loginEmail" type="email" autocomplete="email" placeholder="E-Mail"><input id="loginPass" type="password" autocomplete="current-password" placeholder="Passwort"><button class="btn main" onclick="loginAccount()">Anmelden</button><button class="authSecondary" onclick="createAccount()">Neues Konto erstellen</button><small id="authMsg">Testversion: Konto wird auf diesem Gerät gespeichert.</small></div></div><div class="app">
 <header><div class="logo">AutoFoto <span>AI</span></div><button class="pill accountPill" id="accountPill" onclick="logoutAccount()">Konto</button></header>
 <main id="home">
@@ -395,13 +395,13 @@ function renderStudio(){
  const shots=car.photos||[];
  root.innerHTML='<div class="vzDetailHead"><button onclick="studioBack()">← Details</button></div><div class="vzVin"><span>'+esc(car.vin||car.model||"Fahrzeug")+'</span><button onclick="autoProcessStudio('+car.id+')">Bearbeiten</button></div><div class="studioPhotoGrid">'+shots.map((p,i)=>{
   if(!p)return '';
-  return '<figure class="studioShot"><div class="vzPhoto"><img id="studioimg_'+car.id+'_'+i+'" src="'+p+'" loading="lazy" alt=""><span class="vzLogo">GARAGE VELZA</span><span class="studioPhotoState" id="studioState_'+car.id+'_'+i+'">Original</span></div><figcaption>'+esc(angles[i]||("Foto "+(i+1)))+'</figcaption><button class="studioProcessBtn" data-studio-process="'+car.id+'-'+i+'" style="display:none" onclick="processStudioPhoto('+car.id+','+i+',this)">KI bearbeiten</button><button class="studioPhotosBtn" onclick="saveStudioToPhotos('+car.id+','+i+')">In Fotos sichern</button><a id="studiodl_'+car.id+'_'+i+'" href="'+p+'" download="Original-'+(i+1)+'.jpg">Original speichern</a></figure>'
+  return '<figure class="studioShot"><div class="vzPhoto"><img id="studioimg_'+car.id+'_'+i+'" style="display:none!important" loading="lazy" alt=""><span class="vzLogo">GARAGE VELZA</span><span class="studioPhotoState" id="studioState_'+car.id+'_'+i+'">In Bearbeitung</span></div><figcaption>'+esc(angles[i]||("Foto "+(i+1)))+'</figcaption><button class="studioProcessBtn" data-studio-process="'+car.id+'-'+i+'" style="display:none" onclick="processStudioPhoto('+car.id+','+i+',this)">KI bearbeiten</button><button class="studioPhotosBtn" onclick="saveStudioToPhotos('+car.id+','+i+')">In Fotos sichern</button></figure>'
  }).join("")+'</div>';
  shots.forEach(async(p,i)=>{
   if(!p)return;
   try{const blob=await studioLoad(studioKey(car,i));if(!blob)return;
    const url=URL.createObjectURL(blob),img=document.getElementById('studioimg_'+car.id+'_'+i),state=document.getElementById('studioState_'+car.id+'_'+i),dl=document.getElementById('studiodl_'+car.id+'_'+i);
-   if(img)img.src=url;if(state)state.textContent="Erfolgreich";
+   if(img){img.src=url;img.style.setProperty('display','block','important')}if(state)state.textContent="Erfolgreich";
    if(dl){dl.href=url;dl.download="VELZA-Studio-"+(i+1)+".png";dl.textContent="Studiofoto speichern"}
   }catch(e){}
  })
@@ -409,7 +409,7 @@ function renderStudio(){
 async function saveStudioToPhotos(id,i){
  const v=cars.find(x=>x.id===id);if(!v)return;
  let blob;try{blob=await studioLoad(studioKey(v,i))}catch(e){}
- if(!blob){try{blob=await originalLoad(originalKey(v,i))||await fetch(v.photos?.[i]).then(r=>r.blob())}catch(e){} if(!blob){alert("Foto ist nicht verfügbar.");return}}
+ if(!blob){alert("Das bearbeitete Studiobild ist noch nicht fertig. Bitte warte auf die KI-Verarbeitung.");return}
  const mime=blob.type||"image/jpeg";const ext=mime.includes("png")?"png":"jpg";const file=new File([blob],"GARAGE-VELZA-"+(i+1)+"."+ext,{type:mime});
  try{
   if(navigator.canShare&&navigator.canShare({files:[file]})){
@@ -430,7 +430,7 @@ async function processStudioPhoto(id,i,btn,automatic=false){
    const original=await fetch(src).then(r=>r.blob());
    await studioStore(studioKey(v,i),original);
    const url=URL.createObjectURL(original),preview=document.getElementById('studioimg_'+id+'_'+i);
-   if(preview)preview.src=url;
+   if(preview){preview.src=url;preview.style.setProperty("display","block","important")}
    const state=document.getElementById('studioState_'+id+'_'+i);if(state)state.textContent="Erfolgreich";
    const dl=document.getElementById('studiodl_'+id+'_'+i);
    if(dl){dl.href=url;dl.download='VELZA-Detail-'+(i+1)+'.jpg';dl.textContent='Foto speichern'}
