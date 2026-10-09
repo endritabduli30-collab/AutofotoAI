@@ -344,7 +344,7 @@ async function processStudioPhoto(id,i,btn){
  const v=cars.find(x=>x.id===id),src=v?.photos?.[i];if(!src)return;
  btn.disabled=true;btn.textContent="KI freistellt …";
  try{
-  const {removeBackground}=await import("https://esm.sh/@imgly/background-removal@1.7.0");
+  const {removeBackground}=await import("https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm");
   const cutout=await removeBackground(src,{progress:(key,current,total)=>{if(total)btn.textContent="KI "+Math.round(current/total*100)+" %"}});
   btn.textContent="Studio wird erstellt …";
   const img=new Image();img.src=URL.createObjectURL(cutout);await img.decode();
