@@ -269,7 +269,7 @@ header .logo{color:#17191d!important}
 #studioList .studioShot .vzPhoto>.vzLogo{position:absolute!important;display:inline-block!important;top:7px!important;left:0!important;width:auto!important;height:auto!important;z-index:2!important}
 #studioList .studioShot{display:block!important}#studioList .studioShot figcaption{display:block!important}
 #studioList .studioPhotosBtn{background:#202a3b!important;color:#fff!important;border-radius:9px!important;cursor:pointer!important;touch-action:manipulation!important}
-</style><style id="processed-only-gallery">#studioList .vzPhoto{display:flex!important;align-items:center;justify-content:center;background:#f1f2f4!important}#studioList .vzPhoto:has(img[style*="display: none"]):after{content:"Studio wird erstellt";font-size:12px;color:#777}#studioList .studioPhotosBtn{background:#202a3b!important}</style></head>
+</style><style id="processed-only-gallery">#studioList .vzPhoto{display:flex!important;align-items:center;justify-content:center;background:#f1f2f4!important}#studioList .vzPhoto:has(img[style*="display: none"]):after{content:"Studio wird erstellt";font-size:12px;color:#777}#studioList .studioPhotosBtn{background:#202a3b!important}</style><style id="velza-delete-controls">#studioList .vzDetailHead{display:flex;justify-content:space-between;align-items:center}#studioList .vzDeleteVehicle{font-size:12px;color:#b33344;border:0;background:none;font-weight:700}#studioList .vzDeletePhoto{display:block;background:none;color:#aa3345;border:0;margin:0 auto 10px;padding:7px;font-size:11px;font-weight:700}</style></head>
 <body><div id="rotateGate"><div class="rotatePhone">↻</div><b>iPhone ins Querformat drehen</b><span>Die Aufnahme startet danach automatisch.</span></div><div id="authGate" class="authGate"><div class="authCard"><div class="logo">AutoFoto <span>AI</span></div><h1>Willkommen</h1><p>Jeder Betrieb sieht nur seine eigenen Fahrzeuge.</p><input id="loginEmail" type="email" autocomplete="email" placeholder="E-Mail"><input id="loginPass" type="password" autocomplete="current-password" placeholder="Passwort"><button class="btn main" onclick="loginAccount()">Anmelden</button><button class="authSecondary" onclick="createAccount()">Neues Konto erstellen</button><small id="authMsg">Testversion: Konto wird auf diesem Gerät gespeichert.</small></div></div><div class="app">
 <header><div class="logo">AutoFoto <span>AI</span></div><button class="pill accountPill" id="accountPill" onclick="logoutAccount()">Konto</button></header>
 <main id="home">
@@ -382,6 +382,26 @@ function studioKey(v,i){return (account?.email||"guest")+":"+v.id+":"+i}
 let selectedStudioCar=null;
 function openStudioCar(id){selectedStudioCar=id;openStudio();renderStudio()}
 function studioBack(){selectedStudioCar=null;renderStudio()}
+async function deleteStoredPhoto(dbPromise,key,store){
+ try{const db=await dbPromise;await new Promise((resolve,reject)=>{const tx=db.transaction(store,"readwrite");tx.objectStore(store).delete(key);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}catch(e){console.warn("Foto-Speicher",e)}
+}
+async function deleteStudioPhoto(id,i){
+ const car=cars.find(v=>v.id===id);if(!car||!car.photos?.[i])return;
+ if(!confirm("Dieses Foto endgültig löschen?"))return;
+ car.photos[i]=null;
+ await Promise.all([deleteStoredPhoto(studioDB(),studioKey(car,i),"images"),deleteStoredPhoto(originalDB(),originalKey(car,i),"photos")]);
+ try{localStorage.setItem(accountKey(),JSON.stringify(cars))}catch(e){alert("Löschen konnte nicht gespeichert werden. Bitte Speicher prüfen.");return}
+ render();renderStudio();toast("Foto gelöscht");
+}
+async function deleteStudioVehicle(id){
+ const car=cars.find(v=>v.id===id);if(!car)return;
+ if(!confirm("Fahrzeug "+(car.model||"")+" mit ALLEN Fotos endgültig löschen?"))return;
+ const indexes=(car.photos||[]).map((p,i)=>i);
+ await Promise.all(indexes.flatMap(i=>[deleteStoredPhoto(studioDB(),studioKey(car,i),"images"),deleteStoredPhoto(originalDB(),originalKey(car,i),"photos")]));
+ cars=cars.filter(v=>v.id!==id);
+ try{localStorage.setItem(accountKey(),JSON.stringify(cars))}catch(e){alert("Löschen konnte nicht gespeichert werden.");return}
+ selectedStudioCar=null;render();renderStudio();toast("Fahrzeug gelöscht");
+}
 function renderStudio(){
  const root=document.getElementById("studioList");if(!root)return;
  const car=cars.find(v=>v.id===selectedStudioCar);
@@ -393,9 +413,9 @@ function renderStudio(){
   return;
  }
  const shots=car.photos||[];
- root.innerHTML='<div class="vzDetailHead"><button onclick="studioBack()">← Details</button></div><div class="vzVin"><span>'+esc(car.vin||car.model||"Fahrzeug")+'</span><button onclick="autoProcessStudio('+car.id+')">Bearbeiten</button></div><div class="studioPhotoGrid">'+shots.map((p,i)=>{
+ root.innerHTML='<div class="vzDetailHead"><button onclick="studioBack()">← Details</button><button class="vzDeleteVehicle" onclick="deleteStudioVehicle('+car.id+')">Fahrzeug löschen</button></div><div class="vzVin"><span>'+esc(car.vin||car.model||"Fahrzeug")+'</span><button onclick="autoProcessStudio('+car.id+')">Bearbeiten</button></div><div class="studioPhotoGrid">'+shots.map((p,i)=>{
   if(!p)return '';
-  return '<figure class="studioShot"><div class="vzPhoto"><img id="studioimg_'+car.id+'_'+i+'" style="display:none!important" loading="lazy" alt=""><span class="vzLogo">GARAGE VELZA</span><span class="studioPhotoState" id="studioState_'+car.id+'_'+i+'">In Bearbeitung</span></div><figcaption>'+esc(angles[i]||("Foto "+(i+1)))+'</figcaption><button class="studioProcessBtn" data-studio-process="'+car.id+'-'+i+'" style="display:none" onclick="processStudioPhoto('+car.id+','+i+',this)">KI bearbeiten</button><button class="studioPhotosBtn" onclick="saveStudioToPhotos('+car.id+','+i+')">In Fotos sichern</button></figure>'
+  return '<figure class="studioShot"><div class="vzPhoto"><img id="studioimg_'+car.id+'_'+i+'" style="display:none!important" loading="lazy" alt=""><span class="vzLogo">GARAGE VELZA</span><span class="studioPhotoState" id="studioState_'+car.id+'_'+i+'">In Bearbeitung</span></div><figcaption>'+esc(angles[i]||("Foto "+(i+1)))+'</figcaption><button class="studioProcessBtn" data-studio-process="'+car.id+'-'+i+'" style="display:none" onclick="processStudioPhoto('+car.id+','+i+',this)">KI bearbeiten</button><button class="studioPhotosBtn" onclick="saveStudioToPhotos('+car.id+','+i+')">In Fotos sichern</button><button class="vzDeletePhoto" onclick="deleteStudioPhoto('+car.id+','+i+')">Foto löschen</button></figure>'
  }).join("")+'</div>';
  shots.forEach(async(p,i)=>{
   if(!p)return;
