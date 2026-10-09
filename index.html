@@ -353,9 +353,22 @@ async function processStudioPhoto(id,i,btn){
   const floor=g.createLinearGradient(0,720,0,1000);floor.addColorStop(0,"#ffffff");floor.addColorStop(1,"#d9dadd");g.fillStyle=floor;g.fillRect(0,720,1600,280);
   g.strokeStyle="#a5a7aa";g.lineWidth=2;g.beginPath();g.moveTo(0,720);g.lineTo(1600,720);g.stroke();
   g.fillStyle="#e3e5e9";g.textAlign="center";g.font="300 35px Arial";g.fillText("G A R A G E",800,125);g.font="300 116px Arial";g.fillText("V E L Z A",800,255);g.fillRect(620,285,360,3);
-  const ratio=Math.min(1460/img.width,700/img.height),w=img.width*ratio,h=img.height*ratio,x=(1600-w)/2,y=785-h;
-  g.fillStyle="#0004";g.filter="blur(28px)";g.beginPath();g.ellipse(800,788,Math.min(w*.43,650),36,0,0,Math.PI*2);g.fill();g.filter="none";
-  g.drawImage(img,x,y,w,h);
+  // Trim transparent segmentation margins so the actual tires touch the floor.
+  const scan=document.createElement("canvas");scan.width=img.naturalWidth;scan.height=img.naturalHeight;
+  const sc=scan.getContext("2d",{willReadFrequently:true});sc.drawImage(img,0,0);
+  const pixels=sc.getImageData(0,0,scan.width,scan.height).data;
+  let left=scan.width,top=scan.height,right=0,bottom=0;
+  for(let py=0;py<scan.height;py+=2)for(let px=0;px<scan.width;px+=2){
+    if(pixels[(py*scan.width+px)*4+3]>90){left=Math.min(left,px);right=Math.max(right,px);top=Math.min(top,py);bottom=Math.max(bottom,py)}
+  }
+  if(right<=left||bottom<=top)throw Error("Fahrzeug konnte nicht erkannt werden");
+  const sw=right-left+2,sh=bottom-top+2;
+  const ratio=Math.min(1380/sw,660/sh),w=sw*ratio,h=sh*ratio,x=(1600-w)/2;
+  const ground=797,y=ground-h;
+  // Contact shadow centered immediately below the wheels, not a detached oval.
+  g.save();g.filter="blur(13px)";g.fillStyle="rgba(0,0,0,.24)";
+  g.beginPath();g.ellipse(800,ground+3,Math.min(w*.43,570),Math.max(10,Math.min(23,h*.045)),0,0,Math.PI*2);g.fill();g.restore();
+  g.drawImage(img,left,top,sw,sh,x,y,w,h);
   const result=await new Promise(resolve=>cv.toBlob(resolve,"image/png"));if(!result)throw Error("Bildexport fehlgeschlagen");
   await studioStore(studioKey(v,i),result);
   const url=URL.createObjectURL(result);document.getElementById('studioimg_'+id+'_'+i).src=url;
