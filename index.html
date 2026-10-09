@@ -232,7 +232,7 @@ header{backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);background:
 .studioShot img{background:transparent!important}
 .studioShot:before{content:"GARAGE  V E L Z A";position:absolute;top:8%;left:0;right:0;text-align:center;color:#dfe1e4;letter-spacing:.23em;font-size:clamp(10px,2vw,20px);font-weight:300;text-shadow:0 2px 5px #000;z-index:1}
 .studioShot:after{content:"";position:absolute;left:18%;right:18%;bottom:17%;height:8%;border-radius:50%;background:#0004;filter:blur(13px);z-index:0}
-</style><style id="velza-ai-actions">.studioProcessBtn{display:block;margin:8px 10px;background:#64d4c4;color:#071310;border:0;border-radius:9px;padding:10px;font-weight:800;font-size:12px}.studioProcessBtn:disabled{opacity:.65}.studioShot img{position:relative;z-index:2}</style></head>
+</style><style id="velza-ai-actions">.studioProcessBtn{display:block;margin:8px 10px;background:#64d4c4;color:#071310;border:0;border-radius:9px;padding:10px;font-weight:800;font-size:12px}.studioProcessBtn:disabled{opacity:.65}.studioShot img{position:relative;z-index:2}</style><style id="ios-save-photos">.studioPhotosBtn{display:block;margin:8px 10px;background:#202a39;color:#fff;border:1px solid #5d7189;border-radius:9px;padding:10px;font-weight:750;font-size:12px}</style></head>
 <body><div id="rotateGate"><div class="rotatePhone">↻</div><b>iPhone ins Querformat drehen</b><span>Die Aufnahme startet danach automatisch.</span></div><div id="authGate" class="authGate"><div class="authCard"><div class="logo">AutoFoto <span>AI</span></div><h1>Willkommen</h1><p>Jeder Betrieb sieht nur seine eigenen Fahrzeuge.</p><input id="loginEmail" type="email" autocomplete="email" placeholder="E-Mail"><input id="loginPass" type="password" autocomplete="current-password" placeholder="Passwort"><button class="btn main" onclick="loginAccount()">Anmelden</button><button class="authSecondary" onclick="createAccount()">Neues Konto erstellen</button><small id="authMsg">Testversion: Konto wird auf diesem Gerät gespeichert.</small></div></div><div class="app">
 <header><div class="logo">AutoFoto <span>AI</span></div><button class="pill accountPill" id="accountPill" onclick="logoutAccount()">Konto</button></header>
 <main id="home">
@@ -338,6 +338,20 @@ function renderStudio(){
  const x=document.getElementById("studioList");if(!x)return;
  x.innerHTML=cars.length?cars.map(v=>{const shots=v.photos||[],count=shots.filter(Boolean).length;return '<section class="studioVehicle studioVehicleGallery"><div class="studioMeta"><b>'+esc(v.model||"Fahrzeug")+'</b><small>'+count+' / 20 Fotos · GARAGE VELZA</small></div><div class="studioBadge">STUDIO</div><div class="studioPhotoGrid">'+shots.map((p,i)=>p?'<figure class="studioShot"><img id="studioimg_'+v.id+'_'+i+'" loading="lazy" src="'+p+'" alt="Fahrzeugfoto"><figcaption>'+esc(angles[i]||("Foto "+(i+1)))+'</figcaption><button class="studioProcessBtn" onclick="processStudioPhoto('+v.id+','+i+',this)">KI bearbeiten</button><a id="studiodl_'+v.id+'_'+i+'" href="'+p+'" download="AutoFoto-'+(i+1)+'.jpg">Original speichern</a></figure>':'').join("")+'</div>'+(count===0?'<p class="studioEmpty">Keine Fotos gespeichert.</p>':'')+'</section>'}).join(""):'<div class="card">Noch keine Fahrzeuge in diesem Konto.</div>';
  cars.forEach(v=>(v.photos||[]).forEach(async(p,i)=>{if(!p)return;try{const blob=await studioLoad(studioKey(v,i));if(blob){const url=URL.createObjectURL(blob),img=document.getElementById('studioimg_'+v.id+'_'+i),dl=document.getElementById('studiodl_'+v.id+'_'+i);if(img&&dl){img.src=url;dl.href=url;dl.download='VELZA-Showroom-'+(i+1)+'.png';dl.textContent='Studiofoto speichern'}}}catch(e){}}))
+}
+async function saveStudioToPhotos(id,i){
+ const v=cars.find(x=>x.id===id);if(!v)return;
+ let blob;try{blob=await studioLoad(studioKey(v,i))}catch(e){}
+ if(!blob){alert("Bitte zuerst KI bearbeiten drücken.");return}
+ const file=new File([blob],"GARAGE-VELZA-"+(i+1)+".png",{type:"image/png"});
+ try{
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+   await navigator.share({files:[file],title:"GARAGE VELZA Studiofoto"});
+   return;
+  }
+ }catch(e){if(e.name==="AbortError")return}
+ const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+ alert("Bild heruntergeladen. Auf dem iPhone kannst du es über Teilen → Bild sichern in Fotos speichern.");
 }
 function toggleStudioGallery(id){renderStudio()}
 async function processStudioPhoto(id,i,btn){
