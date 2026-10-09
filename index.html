@@ -392,7 +392,7 @@ function renderStudio(){
 async function saveStudioToPhotos(id,i){
  const v=cars.find(x=>x.id===id);if(!v)return;
  let blob;try{blob=await studioLoad(studioKey(v,i))}catch(e){}
- if(!blob){alert("Bitte zuerst KI bearbeiten drücken.");return}
+ if(!blob){alert("Das Studiofoto ist noch nicht fertig.");return}
  const file=new File([blob],"GARAGE-VELZA-"+(i+1)+".png",{type:"image/png"});
  try{
   if(navigator.canShare&&navigator.canShare({files:[file]})){
@@ -408,33 +408,40 @@ async function processStudioPhoto(id,i,btn,automatic=false){
  const v=cars.find(x=>x.id===id),src=v?.photos?.[i];if(!src)return;
  btn.disabled=true;btn.textContent="KI freistellt …";
  try{
+  // Interior, engine, luggage and wheel details must retain their real surroundings.
+  if(i>=8){
+   const original=await fetch(src).then(r=>r.blob());
+   await studioStore(studioKey(v,i),original);
+   const url=URL.createObjectURL(original),preview=document.getElementById('studioimg_'+id+'_'+i);
+   if(preview)preview.src=url;
+   const state=document.getElementById('studioState_'+id+'_'+i);if(state)state.textContent="Erfolgreich";
+   const dl=document.getElementById('studiodl_'+id+'_'+i);
+   if(dl){dl.href=url;dl.download='VELZA-Detail-'+(i+1)+'.jpg';dl.textContent='Foto speichern'}
+   btn.disabled=false;btn.textContent="Fertig";return;
+  }
   const {removeBackground}=await import("https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm");
   const cutout=await removeBackground(src,{progress:(key,current,total)=>{if(total)btn.textContent="KI "+Math.round(current/total*100)+" %"}});
   btn.textContent="Studio wird erstellt …";
   const img=new Image();img.src=URL.createObjectURL(cutout);await img.decode();
   const cv=document.createElement("canvas");cv.width=1600;cv.height=1000;const g=cv.getContext("2d");
-  // Reference studio: light side walls, deep charcoal central wall and polished dark floor.
-  g.fillStyle="#e5e5e5";g.fillRect(0,0,1600,1000);
-  const wall=g.createLinearGradient(300,0,1300,0);wall.addColorStop(0,"#17191b");wall.addColorStop(.45,"#323438");wall.addColorStop(1,"#17191b");
-  g.fillStyle=wall;g.fillRect(280,0,1040,665);
-  g.fillStyle="#d7d7d7";g.fillRect(0,0,280,665);g.fillRect(1320,0,280,665);
-  g.fillStyle="#55575a";g.fillRect(276,0,7,665);g.fillRect(1317,0,7,665);
-  const floor=g.createLinearGradient(0,665,0,1000);floor.addColorStop(0,"#25272a");floor.addColorStop(.5,"#161719");floor.addColorStop(1,"#303236");g.fillStyle=floor;g.fillRect(0,665,1600,335);
-  g.strokeStyle="#85868a";g.lineWidth=3;g.beginPath();g.moveTo(0,665);g.lineTo(1600,665);g.stroke();
-  // Preserve the real vehicle pixels; trim only transparent margins.
+  // White showroom backdrop and charcoal floor, matching reference gallery.
+  g.fillStyle="#f9f9f9";g.fillRect(0,0,1600,1000);
+  const floor=g.createLinearGradient(0,650,0,1000);floor.addColorStop(0,"#55575a");floor.addColorStop(1,"#252629");
+  g.fillStyle=floor;g.fillRect(0,650,1600,350);
   const scan=document.createElement("canvas");scan.width=img.naturalWidth;scan.height=img.naturalHeight;
   const sc=scan.getContext("2d",{willReadFrequently:true});sc.drawImage(img,0,0);
   const pixels=sc.getImageData(0,0,scan.width,scan.height).data;
   let left=scan.width,top=scan.height,right=0,bottom=0;
-  for(let py=0;py<scan.height;py+=2)for(let px=0;px<scan.width;px+=2)if(pixels[(py*scan.width+px)*4+3]>90){left=Math.min(left,px);right=Math.max(right,px);top=Math.min(top,py);bottom=Math.max(bottom,py)}
+  for(let py=0;py<scan.height;py+=2)for(let px=0;px<scan.width;px+=2){
+   if(pixels[(py*scan.width+px)*4+3]>90){left=Math.min(left,px);right=Math.max(right,px);top=Math.min(top,py);bottom=Math.max(bottom,py)}
+  }
   if(right<=left||bottom<=top)throw Error("Fahrzeug konnte nicht erkannt werden");
   const sw=right-left+2,sh=bottom-top+2;
-  const ratio=Math.min(1370/sw,690/sh),w=sw*ratio,h=sh*ratio,x=(1600-w)/2;
-  const ground=785,y=ground-h;
-  // Grounded contact shadow.
-  g.save();g.filter="blur(19px)";g.fillStyle="rgba(0,0,0,.65)";g.beginPath();g.ellipse(800,ground+5,Math.min(w*.43,590),23,0,0,Math.PI*2);g.fill();g.restore();
-  // Subtle, softened reflection in polished flooring.
-  g.save();g.beginPath();g.rect(0,ground,1600,1000-ground);g.clip();g.translate(0,2*ground);g.scale(1,-1);g.globalAlpha=.16;g.filter="blur(5px)";g.drawImage(img,left,top,sw,sh,x,y,w,h);g.restore();
+  const ratio=Math.min(1390/sw,710/sh),w=sw*ratio,h=sh*ratio,x=(1600-w)/2,ground=805,y=ground-h;
+  g.save();g.filter="blur(15px)";g.fillStyle="rgba(0,0,0,.52)";
+  g.beginPath();g.ellipse(800,ground+4,Math.min(w*.43,560),22,0,0,Math.PI*2);g.fill();g.restore();
+  g.save();g.beginPath();g.rect(0,ground,1600,1000-ground);g.clip();g.translate(0,2*ground);g.scale(1,-1);
+  g.globalAlpha=.12;g.filter="blur(7px)";g.drawImage(img,left,top,sw,sh,x,y,w,h);g.restore();
   g.drawImage(img,left,top,sw,sh,x,y,w,h);
   const result=await new Promise(resolve=>cv.toBlob(resolve,"image/png"));if(!result)throw Error("Bildexport fehlgeschlagen");
   await studioStore(studioKey(v,i),result);
