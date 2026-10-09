@@ -336,7 +336,7 @@ async function studioLoad(key){const db=await studioDB();return new Promise((res
 function studioKey(v,i){return (account?.email||"guest")+":"+v.id+":"+i}
 function renderStudio(){
  const x=document.getElementById("studioList");if(!x)return;
- x.innerHTML=cars.length?cars.map(v=>{const shots=v.photos||[],count=shots.filter(Boolean).length;return '<section class="studioVehicle studioVehicleGallery"><div class="studioMeta"><b>'+esc(v.model||"Fahrzeug")+'</b><small>'+count+' / 20 Fotos · GARAGE VELZA</small></div><div class="studioBadge">STUDIO</div><div class="studioPhotoGrid">'+shots.map((p,i)=>p?'<figure class="studioShot"><img id="studioimg_'+v.id+'_'+i+'" loading="lazy" src="'+p+'" alt="Fahrzeugfoto"><figcaption>'+esc(angles[i]||("Foto "+(i+1)))+'</figcaption><button class="studioProcessBtn" onclick="processStudioPhoto('+v.id+','+i+',this)">KI bearbeiten</button><a id="studiodl_'+v.id+'_'+i+'" href="'+p+'" download="AutoFoto-'+(i+1)+'.jpg">Original speichern</a></figure>':'').join("")+'</div>'+(count===0?'<p class="studioEmpty">Keine Fotos gespeichert.</p>':'')+'</section>'}).join(""):'<div class="card">Noch keine Fahrzeuge in diesem Konto.</div>';
+ x.innerHTML=cars.length?cars.map(v=>{const shots=v.photos||[],count=shots.filter(Boolean).length;return '<section class="studioVehicle studioVehicleGallery"><div class="studioMeta"><b>'+esc(v.model||"Fahrzeug")+'</b><small>'+count+' / 20 Fotos · GARAGE VELZA</small></div><div class="studioBadge">STUDIO</div><div class="studioPhotoGrid">'+shots.map((p,i)=>p?'<figure class="studioShot"><img id="studioimg_'+v.id+'_'+i+'" loading="lazy" src="'+p+'" alt="Fahrzeugfoto"><figcaption>'+esc(angles[i]||("Foto "+(i+1)))+'</figcaption><button class="studioProcessBtn" data-studio-process="'+v.id+'-'+i+'" onclick="processStudioPhoto('+v.id+','+i+',this)">KI bearbeiten</button><a id="studiodl_'+v.id+'_'+i+'" href="'+p+'" download="AutoFoto-'+(i+1)+'.jpg">Original speichern</a></figure>':'').join("")+'</div>'+(count===0?'<p class="studioEmpty">Keine Fotos gespeichert.</p>':'')+'</section>'}).join(""):'<div class="card">Noch keine Fahrzeuge in diesem Konto.</div>';
  cars.forEach(v=>(v.photos||[]).forEach(async(p,i)=>{if(!p)return;try{const blob=await studioLoad(studioKey(v,i));if(blob){const url=URL.createObjectURL(blob),img=document.getElementById('studioimg_'+v.id+'_'+i),dl=document.getElementById('studiodl_'+v.id+'_'+i);if(img&&dl){img.src=url;dl.href=url;dl.download='VELZA-Showroom-'+(i+1)+'.png';dl.textContent='Studiofoto speichern'}}}catch(e){}}))
 }
 async function saveStudioToPhotos(id,i){
@@ -354,7 +354,7 @@ async function saveStudioToPhotos(id,i){
  alert("Bild heruntergeladen. Auf dem iPhone kannst du es über Teilen → Bild sichern in Fotos speichern.");
 }
 function toggleStudioGallery(id){renderStudio()}
-async function processStudioPhoto(id,i,btn){
+async function processStudioPhoto(id,i,btn,automatic=false){
  const v=cars.find(x=>x.id===id),src=v?.photos?.[i];if(!src)return;
  btn.disabled=true;btn.textContent="KI freistellt …";
  try{
@@ -391,10 +391,32 @@ async function processStudioPhoto(id,i,btn){
   const url=URL.createObjectURL(result);document.getElementById('studioimg_'+id+'_'+i).src=url;
   const dl=document.getElementById('studiodl_'+id+'_'+i);dl.href=url;dl.download='VELZA-Studio-'+(i+1)+'.png';dl.textContent='Studiofoto speichern';
   btn.textContent="Erneut bearbeiten";btn.disabled=false;
- }catch(e){btn.disabled=false;btn.textContent="Erneut versuchen";alert("KI-Verarbeitung fehlgeschlagen: "+(e?.message||"Bitte Internetverbindung prüfen"))}
+ }catch(e){btn.disabled=false;btn.textContent="Erneut versuchen";if(automatic)throw e;alert("KI-Verarbeitung fehlgeschlagen: "+(e?.message||"Bitte Internetverbindung prüfen"))}
 }
 
-function confirmShooting(){if(current.photos.filter(Boolean).length<angles.length){toast("Bitte zuerst alle Fotos aufnehmen");return}view("processing");let n=0;processcount.textContent="0 / "+angles.length;let timer=setInterval(()=>{n++;processcount.textContent=n+" / "+angles.length;processtxt.textContent=n<5?"Fotos werden geprüft …":n<10?"Studio-Verarbeitung wird vorbereitet …":"Galerie wird fertiggestellt …";if(n>=angles.length){clearInterval(timer);setTimeout(()=>view("finished"),500)}},180)}
+async function confirmShooting(){
+ const car=current;if(!car||!(car.photos||[]).some(Boolean)){toast("Keine Fotos vorhanden");return}
+ openStudio();toast("Studio-Bearbeitung startet automatisch");
+ await autoProcessStudio(car.id);
+}
+const studioJobs=new Set();
+async function autoProcessStudio(id){
+ if(studioJobs.has(id))return;studioJobs.add(id);
+ const car=cars.find(v=>v.id===id);if(!car){studioJobs.delete(id);return}
+ let status=document.getElementById("studioAutoStatus");
+ if(!status){status=document.createElement("div");status.id="studioAutoStatus";status.className="card";const list=document.getElementById("studioList");list?.parentElement?.insertBefore(status,list)}
+ const shots=(car.photos||[]).map((p,i)=>p?i:-1).filter(i=>i>=0);
+ let success=0,failed=0;
+ for(let k=0;k<shots.length;k++){
+  const i=shots[k];status.textContent="GARAGE VELZA · Studio wird automatisch erstellt: "+(k+1)+" / "+shots.length;
+  const btn=document.querySelector('[data-studio-process="'+id+'-'+i+'"]');
+  if(!btn){failed++;continue}
+  try{await processStudioPhoto(id,i,btn,true);success++}catch(e){failed++}
+  await new Promise(resolve=>setTimeout(resolve,120));
+ }
+ status.textContent="Studio abgeschlossen: "+success+" Bilder fertig"+(failed?", "+failed+" fehlgeschlagen":"")+".";
+ studioJobs.delete(id);
+}
 
 async function enableGuidance(){try{if(typeof DeviceOrientationEvent!=="undefined"&&typeof DeviceOrientationEvent.requestPermission==="function"){sensorbtn.style.display="block";guideStatus.textContent="◎ Ausrichtung antippen";return}window.addEventListener("deviceorientation",onOrientation,true);sensorbtn.style.display="none";guideStatus.textContent="Handy ausrichten"}catch(e){}}
 async function requestGuidance(){try{if(typeof DeviceOrientationEvent!=="undefined"&&typeof DeviceOrientationEvent.requestPermission==="function"){let p=await DeviceOrientationEvent.requestPermission();if(p!=="granted")throw Error("denied")}window.addEventListener("deviceorientation",onOrientation,true);sensorbtn.style.display="none";guideStatus.textContent="Handy ausrichten"}catch(e){toast("Bewegung & Ausrichtung nicht erlaubt")}}
