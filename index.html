@@ -336,28 +336,33 @@ function nextAngle(){step=Math.min(angles.length-1,step+1);updateCam()}
 async function tryLandscape(){/* iPhone Safari does not reliably allow orientation locking; UI prompts user to rotate */}
 function showCameraStart(){live.style.visibility="hidden";placeholder.style.display="grid";placeholder.style.position="absolute";placeholder.style.inset="0";placeholder.style.placeItems="center";placeholder.style.background="#03050a";placeholder.style.zIndex="50";placeholder.innerHTML='<div><b style="font-size:22px">Kamera starten</b><br><small>Tippe einmal, damit iPhone die Live-Kamera öffnet.</small><br><button class="btn main" style="margin-top:16px" onclick="startLiveCamera()">📷 Kamera öffnen</button></div>'}
 async function startLiveCamera(){try{if(window.afStream){window.afStream.getTracks().forEach(t=>t.stop());window.afStream=null}if(!navigator.mediaDevices?.getUserMedia)throw Error("unsupported");const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});window.afStream=s;live.setAttribute("playsinline","true");live.setAttribute("webkit-playsinline","true");live.muted=true;live.srcObject=s;live.style.visibility="visible";await new Promise((resolve,reject)=>{let t=setTimeout(()=>reject(Error("timeout")),5000);live.onloadedmetadata=()=>{clearTimeout(t);resolve()}});await live.play();placeholder.style.display="none";enableGuidance();return true}catch(e){live.style.visibility="hidden";placeholder.style.display="grid";placeholder.innerHTML='<div><b>Kamera konnte nicht geöffnet werden</b><br><small>Bitte in Safari testen und Kamerazugriff erlauben.</small><br><button class="btn main" style="margin-top:14px" onclick="startLiveCamera()">Erneut versuchen</button></div>';return false}}
-function captureLive(){
+async function captureLive(){
  if(!live.videoWidth){toast("Kamera noch nicht bereit");return}
- const isLast=step===angles.length-1;
- let cv=document.createElement("canvas"),ctx=cv.getContext("2d");
- let maxW=1920,scale=Math.min(1,maxW/live.videoWidth);
+ const car=current,index=step,isLast=index===angles.length-1;
+ const cv=document.createElement("canvas"),ctx=cv.getContext("2d");
+ const scale=Math.min(1,1920/live.videoWidth);
  cv.width=Math.round(live.videoWidth*scale);cv.height=Math.round(live.videoHeight*scale);
  ctx.drawImage(live,0,0,cv.width,cv.height);
- current.photos[step]=cv.toDataURL("image/jpeg",.88);
+ const blob=await new Promise(resolve=>cv.toBlob(resolve,"image/jpeg",.88));
+ if(!blob){toast("Foto konnte nicht aufgenommen werden");return}
+ try{
+  await originalStore(originalKey(car,index),blob);
+  const thumb=document.createElement("canvas"),tctx=thumb.getContext("2d");
+  const factor=Math.min(1,640/cv.width);thumb.width=Math.round(cv.width*factor);thumb.height=Math.round(cv.height*factor);
+  tctx.drawImage(cv,0,0,thumb.width,thumb.height);
+  car.photos[index]=thumb.toDataURL("image/jpeg",.58);
+  try{localStorage.setItem(accountKey(),JSON.stringify(cars))}catch(e){toast("Vorschau-Speicher voll – Originalfoto gesichert")}
+ }catch(e){alert("Foto konnte nicht sicher gespeichert werden. Bitte Speicherplatz prüfen. "+(e.message||""));return}
+ render();
  if(isLast){
-   autoShotLock=true;autoReadySince=0;
-   if(window.afStream){window.afStream.getTracks().forEach(t=>t.stop());window.afStream=null}
-   try{localStorage.setItem(accountKey(),JSON.stringify(cars))}catch(e){toast("Speicher voll – Fotos bitte sichern")}
-   render();
-   selectedStudioCar=current.id;openStudio();renderStudio();
-   setTimeout(()=>autoProcessStudio(current.id),250);
-   return;
- }
- try{localStorage.setItem(accountKey(),JSON.stringify(cars))}catch(e){}
- render();step++;updateCam();toast("Foto gespeichert ✓")
+  autoShotLock=true;autoReadySince=0;
+  if(window.afStream){window.afStream.getTracks().forEach(t=>t.stop());window.afStream=null}
+  selectedStudioCar=car.id;openStudio();
+  setTimeout(()=>autoProcessStudio(car.id),250);
+ }else{step++;updateCam();toast("Foto gespeichert ✓")}
 }
 let shutterBusy=false;
-function shutterTap(e){if(e){e.preventDefault();e.stopPropagation()}if(shutterBusy)return;shutterBusy=true;try{captureLive()}finally{setTimeout(()=>shutterBusy=false,700)}}
+function shutterTap(e){if(e){e.preventDefault();e.stopPropagation()}if(shutterBusy)return;shutterBusy=true;Promise.resolve(captureLive()).catch(e=>{toast("Aufnahme fehlgeschlagen");console.error(e)}).finally(()=>{shutterBusy=false})}
 const shutter=document.getElementById("shutter");
 shutter.onclick=shutterTap;
 const capturePanel=document.getElementById("capturePanel");capturePanel.onclick=function(e){if(e.target!==shutter)shutterTap(e)};
@@ -367,6 +372,11 @@ const studioResults=new Map();
 function studioDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open("autofoto-studio-v1",1);r.onupgradeneeded=()=>r.result.createObjectStore("images");r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
 async function studioStore(key,blob){const db=await studioDB();return new Promise((resolve,reject)=>{const tx=db.transaction("images","readwrite");tx.objectStore("images").put(blob,key);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}
 async function studioLoad(key){const db=await studioDB();return new Promise((resolve,reject)=>{const r=db.transaction("images").objectStore("images").get(key);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
+function originalKey(v,i){return (account?.email||"guest")+":"+v.id+":"+i}
+function originalDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open("autofoto-originals-v1",1);r.onupgradeneeded=()=>r.result.createObjectStore("photos");r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
+async function originalStore(key,blob){const db=await originalDB();return new Promise((resolve,reject)=>{const tx=db.transaction("photos","readwrite");tx.objectStore("photos").put(blob,key);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error)})}
+async function originalLoad(key){const db=await originalDB();return new Promise((resolve,reject)=>{const r=db.transaction("photos").objectStore("photos").get(key);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
+async function originalSource(v,i){const blob=await originalLoad(originalKey(v,i));return blob?URL.createObjectURL(blob):v.photos?.[i]}
 function studioKey(v,i){return (account?.email||"guest")+":"+v.id+":"+i}
 
 let selectedStudioCar=null;
@@ -399,7 +409,7 @@ function renderStudio(){
 async function saveStudioToPhotos(id,i){
  const v=cars.find(x=>x.id===id);if(!v)return;
  let blob;try{blob=await studioLoad(studioKey(v,i))}catch(e){}
- if(!blob){try{blob=await fetch(v.photos?.[i]).then(r=>r.blob())}catch(e){} if(!blob){alert("Foto ist nicht verfügbar.");return}}
+ if(!blob){try{blob=await originalLoad(originalKey(v,i))||await fetch(v.photos?.[i]).then(r=>r.blob())}catch(e){} if(!blob){alert("Foto ist nicht verfügbar.");return}}
  const mime=blob.type||"image/jpeg";const ext=mime.includes("png")?"png":"jpg";const file=new File([blob],"GARAGE-VELZA-"+(i+1)+"."+ext,{type:mime});
  try{
   if(navigator.canShare&&navigator.canShare({files:[file]})){
@@ -412,7 +422,7 @@ async function saveStudioToPhotos(id,i){
 }
 function toggleStudioGallery(id){renderStudio()}
 async function processStudioPhoto(id,i,btn,automatic=false){
- const v=cars.find(x=>x.id===id),src=v?.photos?.[i];if(!src)return;
+ const v=cars.find(x=>x.id===id);if(!v?.photos?.[i])return;const src=await originalSource(v,i);
  btn.disabled=true;btn.textContent="KI freistellt …";
  try{
   // Interior, engine, luggage and wheel details must retain their real surroundings.
